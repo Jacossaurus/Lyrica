@@ -1,0 +1,12 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "Node16",
+		"sourceMap": true,
+		"watch": true,
+		"rootDir": "src",
+		"outDir": "build",
+		"checkJs": true,
+		"moduleResolution": "node"
+	}
+}

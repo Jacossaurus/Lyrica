@@ -1,0 +1,15 @@
+{
+	"scripts": {
+		"start": "node build/main.js",
+		"register": "node build/utils/registerCommands.js",
+		"delete": "node build/utils/deleteCommands.js"
+	},
+	"dependencies": {
+		"discord.js": "^14.7.1",
+		"dotenv": "^16.0.3",
+		"fs": "^0.0.1-security",
+		"mongoose": "^6.8.1",
+		"node-fetch": "^3.3.0",
+		"path": "^0.12.7"
+	}
+}
