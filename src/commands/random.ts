@@ -94,7 +94,8 @@ export default {
 
         async function doTheEnd() {
             if (track === undefined) {
-                await interaction.reply("Failed to get track!");
+                await randomSearch();
+                await doTheEnd();
 
                 return;
             }
