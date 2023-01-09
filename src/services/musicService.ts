@@ -140,11 +140,32 @@ class MusicService {
         )) as SpotifyPlaylist;
     }
 
-    async getTracks(artistId: string) {
+    async getAlbums(artistId: string) {
+        return await this.request(
+            "Spotify",
+            `/artists/${artistId}/albums?limit=50&market=us&include_groups=album`
+        );
+    }
+
+    async getTopTracks(artistId: string) {
         return (await this.request(
             "Spotify",
             `/artists/${artistId}/top-tracks?market=us`
         )) as SpotifyTopTracks;
+    }
+
+    async getTrack(trackId: string) {
+        return (await this.request(
+            "Spotify",
+            `/tracks/${trackId}?market=us`
+        )) as SpotifyTrack;
+    }
+
+    async getTracksByAlbumId(albumId: string) {
+        return await this.request(
+            "Spotify",
+            `/albums/${albumId}/tracks?limit=50&market=us`
+        );
     }
 
     async getLyrics(track: SpotifyTrack) {

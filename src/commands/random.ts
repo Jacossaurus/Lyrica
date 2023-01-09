@@ -4,8 +4,10 @@ import {
     EmbedBuilder,
     SlashCommandBuilder,
 } from "discord.js";
-import musicService from "../services/musicService";
-import MusicService from "../services/musicService";
+import musicService from "../services/MusicService";
+import MusicService from "../services/MusicService";
+import { SpotifyAlbumSearch } from "../types/SpotifyAlbumSearch";
+import { SpotifyAlbumTracks } from "../types/SpotifyAlbumTracks";
 import { SpotifyArtistSearch } from "../types/SpotifyArtistSearch";
 import { SpotifyTrack } from "../types/SpotifyTrack";
 import { SpotifyTrackSearch } from "../types/SpotifyTrackSearch";
@@ -30,29 +32,25 @@ export default {
         const artistOption = interaction.options.getString("artist");
 
         if (artistOption !== "") {
-            const originalSearch = (await MusicService.search(
+            const albums = (await MusicService.getAlbums(
                 artistOption
-            )) as SpotifyArtistSearch;
+            )) as SpotifyAlbumSearch;
+            const album =
+                albums.items[Math.floor(Math.random() * albums.items.length)];
 
-            if (
-                originalSearch.artists.items.find(
-                    (artist) => artist.id === artistOption
-                ) !== undefined ||
-                (
-                    await MusicService.getPlaylist("37i9dQZEVXbMDoHDwVN2tF")
-                ).tracks.items.find(
-                    (track) =>
-                        track.track.artists.find(
-                            (artist) => artist.id === artistOption
-                        ) !== undefined
-                ) !== undefined
-            ) {
-                const tracks = await MusicService.getTracks(artistOption);
+            if (album?.id !== undefined) {
+                const tracks = (await MusicService.getTracksByAlbumId(
+                    album.id
+                )) as SpotifyAlbumTracks;
 
-                track =
-                    tracks.tracks[
-                        Math.floor(Math.random() * tracks.tracks.length)
-                    ];
+                const trackId =
+                    tracks.items[
+                        Math.floor(Math.random() * tracks.items.length)
+                    ]?.id;
+
+                if (trackId !== undefined) {
+                    track = await MusicService.getTrack(trackId);
+                }
             }
         }
 
@@ -82,13 +80,11 @@ export default {
                         Math.floor(Math.random() * results.tracks.items.length)
                     ];
             } else {
-                console.log(results);
-
                 await randomSearch();
             }
         }
 
-        if (track === undefined) {
+        if (track?.external_ids?.isrc === undefined) {
             await randomSearch();
         }
 
