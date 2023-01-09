@@ -34,21 +34,26 @@ export default {
             const albums = (await MusicService.getAlbums(
                 artistOption
             )) as SpotifyAlbumSearch;
-            const album =
-                albums.items[Math.floor(Math.random() * albums.items.length)];
 
-            if (album?.id !== undefined) {
-                const tracks = (await MusicService.getTracksByAlbumId(
-                    album.id
-                )) as SpotifyAlbumTracks;
+            if (albums?.items !== undefined) {
+                const album =
+                    albums.items[
+                        Math.floor(Math.random() * albums.items.length)
+                    ];
 
-                const trackId =
-                    tracks.items[
-                        Math.floor(Math.random() * tracks.items.length)
-                    ]?.id;
+                if (album?.id !== undefined) {
+                    const tracks = (await MusicService.getTracksByAlbumId(
+                        album.id
+                    )) as SpotifyAlbumTracks;
 
-                if (trackId !== undefined) {
-                    track = await MusicService.getTrack(trackId);
+                    const trackId =
+                        tracks.items[
+                            Math.floor(Math.random() * tracks.items.length)
+                        ]?.id;
+
+                    if (trackId !== undefined) {
+                        track = await MusicService.getTrack(trackId);
+                    }
                 }
             }
         }
