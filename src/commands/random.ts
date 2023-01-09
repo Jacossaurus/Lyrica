@@ -4,7 +4,6 @@ import {
     EmbedBuilder,
     SlashCommandBuilder,
 } from "discord.js";
-import musicService from "../services/MusicService";
 import MusicService from "../services/MusicService";
 import { SpotifyAlbumSearch } from "../types/SpotifyAlbumSearch";
 import { SpotifyAlbumTracks } from "../types/SpotifyAlbumTracks";
@@ -67,7 +66,7 @@ export default {
                 randomSearchString = "%" + randomSearchString + "%";
             }
 
-            const results = (await musicService.search(
+            const results = (await MusicService.search(
                 randomSearchString,
                 "track",
                 offset,
