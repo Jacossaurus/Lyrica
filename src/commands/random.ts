@@ -4,7 +4,7 @@ import {
     EmbedBuilder,
     SlashCommandBuilder,
 } from "discord.js";
-import MusicService from "../services/MusicService";
+import { MusicService } from "../services/MusicService";
 import { SpotifyAlbumSearch } from "../types/SpotifyAlbumSearch";
 import { SpotifyAlbumTracks } from "../types/SpotifyAlbumTracks";
 import { SpotifyArtistSearch } from "../types/SpotifyArtistSearch";

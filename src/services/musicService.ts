@@ -22,7 +22,7 @@ interface MusicResponse<T> {
     };
 }
 
-class MusicService {
+class Music {
     accessToken: {
         access_token: string;
         token_type: string;
@@ -189,4 +189,4 @@ class MusicService {
     }
 }
 
-export default new MusicService();
+export const MusicService = new Music();
