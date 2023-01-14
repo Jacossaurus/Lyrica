@@ -56,7 +56,7 @@ async function init() {
         }
     });
 
-    client.once("ready", () => {
+    client.on("ready", async () => {
         console.log(`${client.user.tag} is online!`);
 
         client.user.setActivity("you.", {
