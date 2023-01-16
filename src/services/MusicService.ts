@@ -283,7 +283,8 @@ class Music {
                 };
             } else {
                 await randomSearch();
-                await doTheEnd();
+
+                return await doTheEnd();
             }
         };
 
