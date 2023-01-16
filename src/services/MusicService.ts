@@ -275,7 +275,7 @@ class Music {
 
             const lyrics = await this.getLyrics(track);
 
-            if (lyrics) {
+            if (lyrics && track && image) {
                 return {
                     lyrics,
                     track,
@@ -291,10 +291,8 @@ class Music {
     }
 
     async refresh() {
-        if (this.randomCache.length < RANDOM_CACHE_MAX) {
-            for (let i = this.randomCache.length; i < RANDOM_CACHE_MAX; i++) {
-                this.randomCache.push(await this.getRandom());
-            }
+        while (this.randomCache.length < RANDOM_CACHE_MAX) {
+            this.randomCache.push(await this.getRandom());
         }
     }
 }

@@ -25,13 +25,14 @@ export default {
         let data: LyricaRandomResponse;
 
         if (MusicService.randomCache.length > 0 && !artistOption) {
+            console.log(MusicService.randomCache[0]);
             data = MusicService.randomCache[0];
 
             MusicService.randomCache.splice(0, 1);
         } else {
             await interaction.deferReply();
 
-            data = await MusicService.getRandom();
+            data = await MusicService.getRandom(artistOption);
         }
 
         const embed = {
