@@ -5,11 +5,8 @@ import {
     SlashCommandBuilder,
 } from "discord.js";
 import { MusicService } from "../services/MusicService";
-import { SpotifyAlbumSearch } from "../types/SpotifyAlbumSearch";
-import { SpotifyAlbumTracks } from "../types/SpotifyAlbumTracks";
+import { LyricaRandomResponse } from "../types/LyricaRandomResponse";
 import { SpotifyArtistSearch } from "../types/SpotifyArtistSearch";
-import { SpotifyTrack } from "../types/SpotifyTrack";
-import { SpotifyTrackSearch } from "../types/SpotifyTrackSearch";
 
 export default {
     data: new SlashCommandBuilder()
@@ -24,113 +21,42 @@ export default {
         ),
 
     async execute(interaction: ChatInputCommandInteraction) {
-        await interaction.deferReply();
-
-        let track: SpotifyTrack;
-        let image: { height: number; width: number; url: string };
         const artistOption = interaction.options.getString("artist");
+        let data: LyricaRandomResponse;
 
-        if (artistOption !== "") {
-            const albums = (await MusicService.getAlbums(
-                artistOption
-            )) as SpotifyAlbumSearch;
+        if (MusicService.randomCache.length > 0 && artistOption !== undefined) {
+            data = MusicService.randomCache[0];
 
-            if (albums?.items !== undefined) {
-                const album =
-                    albums.items[
-                        Math.floor(Math.random() * albums.items.length)
-                    ];
+            MusicService.randomCache.splice(0, 1);
+        } else {
+            await interaction.deferReply();
 
-                if (album?.id !== undefined) {
-                    const tracks = (await MusicService.getTracksByAlbumId(
-                        album.id
-                    )) as SpotifyAlbumTracks;
-
-                    const trackId =
-                        tracks.items[
-                            Math.floor(Math.random() * tracks.items.length)
-                        ]?.id;
-
-                    if (trackId !== undefined) {
-                        track = await MusicService.getTrack(trackId);
-                    }
-                }
-            }
+            data = await MusicService.getRandom();
         }
 
-        async function randomSearch() {
-            const characters = "abcdefghijklmnopqrstuvwxyz";
+        const embed = {
+            embeds: [
+                new EmbedBuilder()
+                    .setTitle(`"${data.lyrics}"`)
+                    .setDescription(
+                        `*${data.track.name} by ${data.track.artists
+                            .map((artist) => artist.name)
+                            .join(", ")}*`
+                    )
+                    .setImage(data.image.url)
+                    .setFooter({
+                        text: "Lyrics powered by Musixmatch and Spotify.",
+                    }),
+            ],
+        };
 
-            let randomSearchString =
-                characters[Math.floor(Math.random() * characters.length)];
-            const offset = Math.floor(Math.random() * 1000);
-
-            if (Math.random() > 0.5) {
-                randomSearchString = "%" + randomSearchString;
-            } else {
-                randomSearchString = "%" + randomSearchString + "%";
-            }
-
-            const results = (await MusicService.search(
-                randomSearchString,
-                "track",
-                offset,
-                50
-            )) as SpotifyTrackSearch;
-
-            if (results?.tracks?.items !== undefined) {
-                track =
-                    results.tracks.items[
-                        Math.floor(Math.random() * results.tracks.items.length)
-                    ];
-            } else {
-                await randomSearch();
-            }
+        if (interaction.deferred) {
+            await interaction.followUp(embed);
+        } else {
+            await interaction.reply(embed);
         }
 
-        if (track?.external_ids?.isrc === undefined) {
-            await randomSearch();
-        }
-
-        async function doTheEnd() {
-            if (track === undefined) {
-                await randomSearch();
-                await doTheEnd();
-
-                return;
-            }
-
-            track.album.images.forEach((i) => {
-                if (image === undefined || i.height > image.height) {
-                    image = i;
-                }
-            });
-
-            const lyrics = await MusicService.getLyrics(track);
-
-            if (lyrics) {
-                await interaction.followUp({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setTitle(`"${lyrics}"`)
-                            .setDescription(
-                                `*${track.name} by ${track.artists
-                                    .map((artist) => artist.name)
-                                    .join(", ")}*`
-                            )
-                            .setImage(image.url)
-                            .setFooter({
-                                text: "Lyrics powered by Musixmatch and Spotify.",
-                            }),
-                    ],
-                });
-            } else {
-                await randomSearch();
-                await doTheEnd();
-            }
-        }
-
-        await doTheEnd();
+        MusicService.refresh();
     },
 
     async autocomplete(interaction: AutocompleteInteraction) {

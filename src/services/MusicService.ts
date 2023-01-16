@@ -1,5 +1,8 @@
+import { LyricaRandomResponse } from "../types/LyricaRandomResponse";
 import { MusicLyrics } from "../types/MusicLyrics";
 import { MusicTrack } from "../types/MusicTrack";
+import { SpotifyAlbumSearch } from "../types/SpotifyAlbumSearch";
+import { SpotifyAlbumTracks } from "../types/SpotifyAlbumTracks";
 import { SpotifyArtistSearch } from "../types/SpotifyArtistSearch";
 import { SpotifyPlaylist } from "../types/SpotifyPlaylist";
 import { SpotifyTopTracks } from "../types/SpotifyTopTracks";
@@ -10,6 +13,7 @@ const SPOTIFY_API_BASE = "https://api.spotify.com/v1";
 const MUSIC_API_BASE = "https://api.musixmatch.com/ws/1.1";
 
 const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000;
+const RANDOM_CACHE_MAX = 10;
 
 interface MusicResponse<T> {
     message: {
@@ -31,6 +35,7 @@ class Music {
     };
 
     cache: { [key: string]: { expiry: number; data: any } } = {};
+    randomCache: Array<LyricaRandomResponse> = [];
 
     get authToken() {
         return `${this.accessToken.token_type} ${this.accessToken.access_token}`;
@@ -186,6 +191,111 @@ class Music {
                 `/track.snippet.get?track_id=${musicTrack.message.body.track.track_id}`
             )) as MusicResponse<MusicLyrics>
         ).message.body.snippet.snippet_body;
+    }
+
+    async getRandom(artistOption?: string) {
+        let track: SpotifyTrack;
+        let image: { height: number; width: number; url: string };
+
+        if (artistOption !== undefined && artistOption !== "") {
+            const albums = (await this.getAlbums(
+                artistOption
+            )) as SpotifyAlbumSearch;
+
+            if (albums?.items !== undefined) {
+                const album =
+                    albums.items[
+                        Math.floor(Math.random() * albums.items.length)
+                    ];
+
+                if (album?.id !== undefined) {
+                    const tracks = (await this.getTracksByAlbumId(
+                        album.id
+                    )) as SpotifyAlbumTracks;
+
+                    const trackId =
+                        tracks.items[
+                            Math.floor(Math.random() * tracks.items.length)
+                        ]?.id;
+
+                    if (trackId !== undefined) {
+                        track = await this.getTrack(trackId);
+                    }
+                }
+            }
+        }
+
+        const randomSearch = async () => {
+            const characters = "abcdefghijklmnopqrstuvwxyz";
+
+            let randomSearchString =
+                characters[Math.floor(Math.random() * characters.length)];
+            const offset = Math.floor(Math.random() * 1000);
+
+            if (Math.random() > 0.5) {
+                randomSearchString = "%" + randomSearchString;
+            } else {
+                randomSearchString = "%" + randomSearchString + "%";
+            }
+
+            const results = (await this.search(
+                randomSearchString,
+                "track",
+                offset,
+                50
+            )) as SpotifyTrackSearch;
+
+            if (results?.tracks?.items !== undefined) {
+                track =
+                    results.tracks.items[
+                        Math.floor(Math.random() * results.tracks.items.length)
+                    ];
+            } else {
+                await randomSearch();
+            }
+        };
+
+        if (track?.external_ids?.isrc === undefined) {
+            await randomSearch();
+        }
+
+        const doTheEnd = async () => {
+            if (track === undefined) {
+                await randomSearch();
+                await doTheEnd();
+
+                return;
+            }
+
+            track.album.images.forEach((i) => {
+                if (image === undefined || i.height > image.height) {
+                    image = i;
+                }
+            });
+
+            const lyrics = await this.getLyrics(track);
+
+            if (lyrics) {
+                return {
+                    lyrics,
+                    track,
+                    image,
+                };
+            } else {
+                await randomSearch();
+                await doTheEnd();
+            }
+        };
+
+        return await doTheEnd();
+    }
+
+    async refresh() {
+        if (this.randomCache.length < RANDOM_CACHE_MAX) {
+            for (let i = this.randomCache.length; i < RANDOM_CACHE_MAX; i++) {
+                this.randomCache.push(await this.getRandom());
+            }
+        }
     }
 }
 
