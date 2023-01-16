@@ -24,7 +24,7 @@ export default {
         const artistOption = interaction.options.getString("artist");
         let data: LyricaRandomResponse;
 
-        if (MusicService.randomCache.length > 0 && artistOption === undefined) {
+        if (MusicService.randomCache.length > 0 && !artistOption) {
             data = MusicService.randomCache[0];
 
             MusicService.randomCache.splice(0, 1);
