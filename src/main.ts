@@ -60,7 +60,7 @@ async function init() {
     });
 
     client.on(Events.MessageCreate, (message) => {
-        if (message.content === ".r" || message.content.startsWith(".r ")) {
+        if (message.content === ".rs" || message.content.startsWith(".rs ")) {
             commands.get("random").executeInformal(message);
         }
     });
