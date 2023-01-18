@@ -34,11 +34,17 @@ class Music {
         stamp: number;
     };
 
-    cache: { [key: string]: { expiry: number; data: any } } = {};
+    cache: Map<string, { expiry: number; data: any } | undefined> = new Map();
     randomCache: Array<LyricaRandomResponse> = [];
 
     get authToken() {
         return `${this.accessToken.token_type} ${this.accessToken.access_token}`;
+    }
+
+    async init() {
+        await this.authenticate();
+
+        await this.refresh();
     }
 
     async authenticate() {
@@ -81,10 +87,9 @@ class Music {
             type === "Spotify" ? SPOTIFY_API_BASE : MUSIC_API_BASE
         }${queries}`;
 
-        if (
-            this.cache[url] === undefined ||
-            this.cache[url]?.expiry < Date.now()
-        ) {
+        const entry = this.cache.get(url);
+
+        if (entry === undefined || entry?.expiry < Date.now()) {
             let response: any;
 
             if (type === "Spotify") {
@@ -109,13 +114,13 @@ class Music {
                 ).json();
             }
 
-            this.cache[url] = {
+            this.cache.set(url, {
                 expiry: Date.now() + CACHE_EXPIRY,
                 data: response,
-            };
+            });
         }
 
-        return this.cache[url].data;
+        return this.cache.get(url).data;
     }
 
     async search(
@@ -179,7 +184,7 @@ class Music {
             `/track.get?track_isrc=${track.external_ids.isrc}`
         )) as MusicResponse<{ track: MusicTrack }>;
 
-        const hasLyrics = musicTrack.message?.body?.track?.has_lyrics;
+        const hasLyrics = musicTrack?.message?.body?.track?.has_lyrics;
 
         if (hasLyrics === undefined || hasLyrics === 0) {
             return false;
@@ -188,7 +193,7 @@ class Music {
         return (
             (await this.request(
                 "Music",
-                `/track.snippet.get?track_id=${musicTrack.message.body.track.track_id}`
+                `/track.snippet.get?track_id=${musicTrack?.message.body.track.track_id}`
             )) as MusicResponse<MusicLyrics>
         ).message.body.snippet.snippet_body;
     }
@@ -198,9 +203,24 @@ class Music {
         let image: { height: number; width: number; url: string };
 
         if (artistOption !== undefined && artistOption !== "") {
-            const albums = (await this.getAlbums(
+            let albums = (await this.getAlbums(
                 artistOption
             )) as SpotifyAlbumSearch;
+
+            if (albums?.items === undefined) {
+                const artists = (await MusicService.search(
+                    artistOption
+                )) as SpotifyArtistSearch;
+
+                if (
+                    artists?.artists?.items !== undefined &&
+                    artists.artists.items.length > 0
+                ) {
+                    albums = (await this.getAlbums(
+                        artists.artists.items[0].id
+                    )) as SpotifyAlbumSearch;
+                }
+            }
 
             if (albums?.items !== undefined) {
                 const album =
@@ -262,9 +282,7 @@ class Music {
         const doTheEnd = async () => {
             if (track === undefined) {
                 await randomSearch();
-                await doTheEnd();
-
-                return;
+                return await doTheEnd();
             }
 
             track.album.images.forEach((i) => {

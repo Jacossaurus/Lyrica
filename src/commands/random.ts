@@ -1,7 +1,9 @@
 import {
     AutocompleteInteraction,
+    Channel,
     ChatInputCommandInteraction,
     EmbedBuilder,
+    Message,
     SlashCommandBuilder,
 } from "discord.js";
 import { MusicService } from "../services/MusicService";
@@ -20,11 +22,14 @@ export default {
                 .setMaxLength(30)
         ),
 
-    async execute(interaction: ChatInputCommandInteraction) {
+    async executeSlash(interaction: ChatInputCommandInteraction) {
         const artistOption = interaction.options.getString("artist");
         let data: LyricaRandomResponse;
 
-        if (MusicService.randomCache.length > 0 && !artistOption) {
+        if (
+            MusicService.randomCache.length > 0 &&
+            (!artistOption || artistOption === "")
+        ) {
             data = MusicService.randomCache[0];
 
             MusicService.randomCache.splice(0, 1);
@@ -55,6 +60,48 @@ export default {
         } else {
             await interaction.reply(embed);
         }
+
+        MusicService.refresh();
+    },
+
+    async executeInformal(message: Message) {
+        const options = message.content.split(" ");
+        options.splice(0, 1);
+
+        const artistOption = options.join(" ");
+
+        let data: LyricaRandomResponse;
+
+        if (
+            MusicService.randomCache.length > 0 &&
+            (!artistOption || artistOption === "")
+        ) {
+            data = MusicService.randomCache[0];
+
+            MusicService.randomCache.splice(0, 1);
+        } else {
+            data = await MusicService.getRandom(artistOption);
+        }
+
+        const embed = {
+            embeds: [
+                new EmbedBuilder()
+                    .setTitle(`"${data.lyrics}"`)
+                    .setDescription(
+                        `*${data.track.name} by ${data.track.artists
+                            .map((artist) => artist.name)
+                            .join(", ")}*
+							
+							on ${data.track.album.name}`
+                    )
+                    .setImage(data.image.url)
+                    .setFooter({
+                        text: "Lyrics powered by Musixmatch and Spotify.",
+                    }),
+            ],
+        };
+
+        await message.channel.send(embed);
 
         MusicService.refresh();
     },

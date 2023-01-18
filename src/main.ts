@@ -1,5 +1,6 @@
 import { ActivityType, Client, Events } from "discord.js";
 import { config } from "dotenv";
+import { MusicService } from "./services/MusicService";
 import { deleteReply } from "./utils/deleteReply";
 import { getCommands } from "./utils/getCommands";
 import { getInteractions } from "./utils/getInteractions";
@@ -7,10 +8,12 @@ import { getInteractions } from "./utils/getInteractions";
 config();
 
 const client = new Client({
-    intents: [],
+    intents: ["Guilds", "GuildMessages", "MessageContent"],
 });
 
 async function init() {
+    MusicService.init();
+
     const commands = await getCommands();
     const interactions = await getInteractions();
 
@@ -19,7 +22,7 @@ async function init() {
             const command = commands.get(interaction.commandName);
 
             if (command) {
-                await command.execute(interaction);
+                await command.executeSlash(interaction);
             } else {
                 await interaction.reply(`Failed to find command.`);
 
@@ -53,6 +56,12 @@ async function init() {
 
                 deleteReply(interaction);
             }
+        }
+    });
+
+    client.on(Events.MessageCreate, (message) => {
+        if (message.content === ".r" || message.content.startsWith(".r ")) {
+            commands.get("random").executeInformal(message);
         }
     });
 
