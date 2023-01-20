@@ -17,7 +17,7 @@ export default {
         .setDescription("Change Lyrica's settings.")
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
-    async execute(interaction: ChatInputCommandInteraction) {
+    async executeSlash(interaction: ChatInputCommandInteraction) {
         const row =
             new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
                 new StringSelectMenuBuilder()
