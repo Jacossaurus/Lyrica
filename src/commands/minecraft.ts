@@ -214,7 +214,7 @@ const command = {
             setTimeout(async () => {
                 if (stamp === current) {
                     await interaction.channel.send(
-                        `${interaction.user} process termination commences in 30 minutes! Delay termination my re-inputting the START signal.`
+                        `${interaction.user} process termination commences in 30 minutes! Delay termination by re-inputting the START signal.`
                     );
 
                     setTimeout(() => {
