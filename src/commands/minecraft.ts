@@ -163,19 +163,33 @@ const command = {
                         if (stamp === current) {
                             command.executeSlash(interaction, true);
                         }
-                    }, 30 * 1000); // }, THIRTY_MINUTES);
+                    }, THIRTY_MINUTES);
                 }
-            }, 30 * 1000); // }, time * 60 * 60 * 1000 - THIRTY_MINUTES);
+            }, time * 60 * 60 * 1000 - THIRTY_MINUTES);
         } else if (signal === "STOP") {
-            await interaction.channel.send(
-                "Terminating Velocity and Fabric server processes"
-            );
+            if (running && !killing) {
+                await interaction.channel.send(
+                    "Terminating Velocity and Fabric server processes."
+                );
 
-            await endProcesses();
+                await endProcesses();
 
-            await interaction.channel.send("Processes have been terminated.");
+                await interaction.channel.send(
+                    "Processes have been terminated."
+                );
 
-            await interaction.channel.send("The Land of Kings is now offline.");
+                await interaction.channel.send(
+                    "The Land of Kings is now **offline**."
+                );
+            } else if (!running && !killing) {
+                await interaction.channel.send(
+                    "The processes have already been terminated. Thanks for trying to help though. :)"
+                );
+            } else if (killing) {
+                await interaction.channel.send(
+                    "The processes are already undergoing extermination. Thanks for trying to help though. :)"
+                );
+            }
         }
     },
 };
