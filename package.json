@@ -5,6 +5,7 @@
         "delete": "node build/utils/deleteCommands.js"
     },
     "dependencies": {
+        "child_process": "^1.0.2",
         "discord.js": "^14.7.1",
         "dotenv": "^16.0.3",
         "fs": "^0.0.1-security",

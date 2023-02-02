@@ -1,6 +1,5 @@
 import {
     AutocompleteInteraction,
-    Channel,
     ChatInputCommandInteraction,
     EmbedBuilder,
     Message,

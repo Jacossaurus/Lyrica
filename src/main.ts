@@ -22,7 +22,20 @@ async function init() {
             const command = commands.get(interaction.commandName);
 
             if (command) {
-                await command.executeSlash(interaction);
+                if (
+                    command.targetGuildIds === undefined ||
+                    (command.targetGuildIds !== undefined &&
+                        command.targetGuildIds.indexOf(interaction.guildId) !==
+                            -1)
+                ) {
+                    await command.executeSlash(interaction);
+                } else {
+                    await interaction.reply(
+                        `FATAL: This command is not available for this guild ${interaction.guildId}`
+                    );
+
+                    deleteReply(interaction);
+                }
             } else {
                 await interaction.reply(`Failed to find command.`);
 
