@@ -2,6 +2,8 @@ import { ChildProcessWithoutNullStreams, spawn } from "child_process";
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
 import path from "path";
 
+const THIRTY_MINUTES = 30 * 60 * 1000;
+
 const targetGuildIds = [
     "937409042970710046",
     "927342689043771442",
@@ -9,13 +11,16 @@ const targetGuildIds = [
     "993371911046320248",
 ];
 
-let stopSignalTimeout: NodeJS.Timeout;
+let running: boolean;
+let stamp: number;
 
 let velocityProcess: ChildProcessWithoutNullStreams;
 let fabricProcess: ChildProcessWithoutNullStreams;
 
 async function endProcesses() {
     if (velocityProcess !== undefined && fabricProcess !== undefined) {
+        stamp = Date.now();
+
         velocityProcess.stdin.write("end\n");
         velocityProcess.stdin.end();
 
@@ -29,6 +34,8 @@ async function endProcesses() {
         fabricProcess = undefined;
 
         await new Promise((resolve) => setTimeout(resolve, 3000));
+
+        running = false;
 
         console.log("Processes are now terminated.");
     }
@@ -54,6 +61,7 @@ const command = {
                 .setDescription(
                     "Specify the amount of time (in hours) before the process is terminated."
                 )
+                .setMinValue(1)
                 .setMaxValue(6)
         ),
 
@@ -75,7 +83,13 @@ const command = {
         );
 
         if (signal === "START") {
-            if (velocityProcess === undefined && fabricProcess === undefined) {
+            if (
+                velocityProcess === undefined &&
+                fabricProcess === undefined &&
+                !running
+            ) {
+                running = true;
+
                 const velocityPath = process.env.VELOCITY_PATH;
                 const fabricPath = process.env.FABRIC_PATH;
 
@@ -118,20 +132,29 @@ const command = {
                 await interaction.channel.send(
                     `**STOP** signal will be sent in ${time} hours.`
                 );
-            } else if (stopSignalTimeout !== undefined) {
-                clearTimeout(stopSignalTimeout);
-
-                stopSignalTimeout = undefined;
-
+            } else if (running) {
                 await interaction.channel.send(
                     `Process termination delayed for a further ${time} hours.`
                 );
             }
 
-            stopSignalTimeout = setTimeout(
-                () => command.executeSlash(interaction, true),
-                time * 60 * 60 * 1000
-            );
+            const current = Date.now();
+
+            stamp = current;
+
+            setTimeout(async () => {
+                if (stamp === current) {
+                    await interaction.channel.send(
+                        `${interaction.user} process termination commences in 30 minutes! Delay termination my re-inputting the START signal.`
+                    );
+
+                    setTimeout(() => {
+                        if (stamp === current) {
+                            command.executeSlash(interaction, true);
+                        }
+                    }, 30 * 1000); // }, THIRTY_MINUTES);
+                }
+            }, 30 * 1000); // }, time * 60 * 60 * 1000 - THIRTY_MINUTES);
         } else if (signal === "STOP") {
             await interaction.channel.send(
                 "Terminating Velocity and Fabric server processes"
