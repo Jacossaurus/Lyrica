@@ -14,6 +14,24 @@ let stopSignalTimeout: NodeJS.Timeout;
 let velocityProcess: ChildProcessWithoutNullStreams;
 let fabricProcess: ChildProcessWithoutNullStreams;
 
+function endProcesses() {
+    if (velocityProcess !== undefined && fabricProcess !== undefined) {
+        velocityProcess.stdin.write("end\n");
+        velocityProcess.stdin.end();
+
+        fabricProcess.stdin.write("stop\n");
+        fabricProcess.stdin.end();
+
+        velocityProcess.kill();
+        fabricProcess.kill();
+
+        velocityProcess = undefined;
+        fabricProcess = undefined;
+
+        console.log("Processes are now terminated.");
+    }
+}
+
 const command = {
     data: new SlashCommandBuilder()
         .setName("minecraft")
@@ -88,18 +106,6 @@ const command = {
                 await interaction.channel.send(
                     `**STOP** signal will be sent in ${time} hours.`
                 );
-
-                velocityProcess.stdout.on("data", (data) => {
-                    console.log(
-                        `VELOCITY: ${process.stdout.write(data.toString())}`
-                    );
-                });
-
-                fabricProcess.stdout.on("data", (data) => {
-                    console.log(
-                        `FABRIC: ${process.stdout.write(data.toString())}`
-                    );
-                });
             } else if (stopSignalTimeout !== undefined) {
                 clearTimeout(stopSignalTimeout);
 
@@ -115,11 +121,7 @@ const command = {
                 time * 60 * 60 * 1000
             );
         } else if (signal === "STOP") {
-            velocityProcess.stdin.write("end");
-            fabricProcess.stdin.write("stop");
-
-            velocityProcess = undefined;
-            fabricProcess = undefined;
+            endProcesses();
 
             await interaction.channel.send("The Land of Kings is now offline.");
 
@@ -130,10 +132,4 @@ const command = {
 
 export default command;
 
-process.on("exit", () => {
-    velocityProcess?.stdin.write("end");
-    fabricProcess?.stdin.write("stop");
-
-    velocityProcess?.kill();
-    fabricProcess?.kill();
-});
+process.on("exit", endProcesses);
