@@ -14,7 +14,7 @@ let stopSignalTimeout: NodeJS.Timeout;
 let velocityProcess: ChildProcessWithoutNullStreams;
 let fabricProcess: ChildProcessWithoutNullStreams;
 
-function endProcesses() {
+async function endProcesses() {
     if (velocityProcess !== undefined && fabricProcess !== undefined) {
         velocityProcess.stdin.write("end\n");
         velocityProcess.stdin.end();
@@ -27,6 +27,8 @@ function endProcesses() {
 
         velocityProcess = undefined;
         fabricProcess = undefined;
+
+        await new Promise((resolve) => setTimeout(resolve, 3000));
 
         console.log("Processes are now terminated.");
     }
@@ -87,6 +89,10 @@ const command = {
                     }
                 );
 
+                velocityProcess.stdout.on("data", (data) => {
+                    process.stdout.write(data.toString());
+                });
+
                 await interaction.channel.send(
                     "Starting Fabric server process."
                 );
@@ -98,6 +104,12 @@ const command = {
                         cwd: fabricPath,
                     }
                 );
+
+                fabricProcess.stdout.on("data", (data) => {
+                    process.stdout.write(data.toString());
+                });
+
+                await new Promise((resolve) => setTimeout(resolve, 6000));
 
                 await interaction.channel.send(
                     "The Land of Kings is running on **minecraft.mrking.dev**!"
@@ -121,11 +133,15 @@ const command = {
                 time * 60 * 60 * 1000
             );
         } else if (signal === "STOP") {
-            endProcesses();
+            await interaction.channel.send(
+                "Terminating Velocity and Fabric server processes"
+            );
 
-            await interaction.channel.send("The Land of Kings is now offline.");
+            await endProcesses();
 
             await interaction.channel.send("Processes have been terminated.");
+
+            await interaction.channel.send("The Land of Kings is now offline.");
         }
     },
 };
