@@ -12,14 +12,21 @@ const targetGuildIds = [
 ];
 
 let running: boolean;
+let killing: boolean;
 let stamp: number;
 
 let velocityProcess: ChildProcessWithoutNullStreams;
 let fabricProcess: ChildProcessWithoutNullStreams;
 
 async function endProcesses() {
-    if (velocityProcess !== undefined && fabricProcess !== undefined) {
+    if (
+        velocityProcess !== undefined &&
+        fabricProcess !== undefined &&
+        running &&
+        !killing
+    ) {
         stamp = Date.now();
+        killing = true;
 
         velocityProcess.stdin.write("end\n");
         velocityProcess.stdin.end();
@@ -27,15 +34,16 @@ async function endProcesses() {
         fabricProcess.stdin.write("stop\n");
         fabricProcess.stdin.end();
 
+        await new Promise((resolve) => setTimeout(resolve, 15000));
+
         velocityProcess.kill();
         fabricProcess.kill();
 
         velocityProcess = undefined;
         fabricProcess = undefined;
 
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-
         running = false;
+        killing = false;
 
         console.log("Processes are now terminated.");
     }
@@ -78,15 +86,18 @@ const command = {
             ? Math.min(interaction.options.getInteger("time") || 3, 6)
             : 0;
 
-        await interaction.reply(
-            `The Land of Kings server **${signal}** signal has been sent.`
-        );
+        if (!followUp) {
+            await interaction.reply(
+                `The Land of Kings server **${signal}** signal has been sent.`
+            );
+        }
 
         if (signal === "START") {
             if (
                 velocityProcess === undefined &&
                 fabricProcess === undefined &&
-                !running
+                !running &&
+                !killing
             ) {
                 running = true;
 
@@ -123,7 +134,7 @@ const command = {
                     process.stdout.write(data.toString());
                 });
 
-                await new Promise((resolve) => setTimeout(resolve, 6000));
+                await new Promise((resolve) => setTimeout(resolve, 15000));
 
                 await interaction.channel.send(
                     "The Land of Kings is running on **minecraft.mrking.dev**!"
@@ -132,7 +143,7 @@ const command = {
                 await interaction.channel.send(
                     `**STOP** signal will be sent in ${time} hours.`
                 );
-            } else if (running) {
+            } else if (running && !killing) {
                 await interaction.channel.send(
                     `Process termination delayed for a further ${time} hours.`
                 );
