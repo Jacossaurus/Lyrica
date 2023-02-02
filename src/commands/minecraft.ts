@@ -197,6 +197,10 @@ const command = {
                 await interaction.channel.send(
                     `Process termination delayed for a further ${time} hours.`
                 );
+            } else if (killing) {
+                await interaction.channel.send(
+                    "The processes are undergoing termination. Please calm the fuck down. :)"
+                );
             } else if (starting) {
                 await interaction.channel.send(
                     "Process instantiation is already underway. Please calm the fuck down. :)"
