@@ -36,16 +36,29 @@ async function endProcesses() {
         fabricProcess.stdin.write("stop\n");
         fabricProcess.stdin.end();
 
-        await new Promise((resolve) => setTimeout(resolve, 15000));
+        await new Promise((resolve) => {
+            let numExited = 0;
 
-        velocityProcess.kill();
-        fabricProcess.kill();
+            velocityProcess.on("exit", exited);
+            fabricProcess.on("exit", exited);
 
-        velocityProcess = undefined;
-        fabricProcess = undefined;
+            function exited() {
+                numExited++;
 
-        running = false;
-        killing = false;
+                if (numExited >= 2) {
+                    velocityProcess.kill();
+                    fabricProcess.kill();
+
+                    velocityProcess = undefined;
+                    fabricProcess = undefined;
+
+                    running = false;
+                    killing = false;
+
+                    resolve(true);
+                }
+            }
+        });
 
         console.log("Processes are now terminated.");
     }
@@ -108,6 +121,8 @@ const command = {
                 const velocityPath = process.env.VELOCITY_PATH;
                 const fabricPath = process.env.FABRIC_PATH;
 
+                let numStarted = 0;
+
                 await interaction.channel.send("Starting Velocity process.");
 
                 velocityProcess = spawn(
@@ -119,7 +134,13 @@ const command = {
                 );
 
                 velocityProcess.stdout.on("data", (data) => {
-                    process.stdout.write(data.toString());
+                    const text = data.toString() as string;
+
+                    process.stdout.write(text);
+
+                    if (text.includes("INFO]: Done") && numStarted < 2) {
+                        numStarted++;
+                    }
                 });
 
                 await interaction.channel.send(
@@ -135,10 +156,33 @@ const command = {
                 );
 
                 fabricProcess.stdout.on("data", (data) => {
-                    process.stdout.write(data.toString());
+                    const text = data.toString() as string;
+
+                    process.stdout.write(text);
+
+                    if (
+                        text.includes("[Server thread/INFO]: Done") &&
+                        numStarted < 2
+                    ) {
+                        numStarted++;
+                    }
                 });
 
-                await new Promise((resolve) => setTimeout(resolve, 15000));
+                await new Promise((resolve) => {
+                    const interval = setInterval(() => {
+                        console.log(
+                            "Waiting for processes to finish starting."
+                        );
+
+                        if (numStarted >= 2) {
+                            clearInterval(interval);
+
+                            console.log("Processes have started!");
+
+                            resolve(true);
+                        }
+                    }, 1000);
+                });
 
                 await interaction.channel.send(
                     "The Land of Kings is running on **minecraft.mrking.dev**!"
