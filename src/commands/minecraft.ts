@@ -11,9 +11,10 @@ const targetGuildIds = [
     "993371911046320248",
 ];
 
-let running: boolean;
-let killing: boolean;
-let stamp: number;
+let running = false;
+let starting = false;
+let killing = false;
+let stamp = Date.now();
 
 let velocityProcess: ChildProcessWithoutNullStreams;
 let fabricProcess: ChildProcessWithoutNullStreams;
@@ -23,6 +24,7 @@ async function endProcesses() {
         velocityProcess !== undefined &&
         fabricProcess !== undefined &&
         running &&
+        !starting &&
         !killing
     ) {
         stamp = Date.now();
@@ -97,9 +99,11 @@ const command = {
                 velocityProcess === undefined &&
                 fabricProcess === undefined &&
                 !running &&
+                !starting &&
                 !killing
             ) {
                 running = true;
+                starting = true;
 
                 const velocityPath = process.env.VELOCITY_PATH;
                 const fabricPath = process.env.FABRIC_PATH;
@@ -143,9 +147,15 @@ const command = {
                 await interaction.channel.send(
                     `**STOP** signal will be sent in ${time} hours.`
                 );
-            } else if (running && !killing) {
+
+                starting = false;
+            } else if (running && !starting && !killing) {
                 await interaction.channel.send(
                     `Process termination delayed for a further ${time} hours.`
+                );
+            } else if (starting) {
+                await interaction.channel.send(
+                    "Process instantiation is already underway. Please calm the fuck down. :)"
                 );
             }
 
@@ -167,7 +177,7 @@ const command = {
                 }
             }, time * 60 * 60 * 1000 - THIRTY_MINUTES);
         } else if (signal === "STOP") {
-            if (running && !killing) {
+            if (running && !starting && !killing) {
                 await interaction.channel.send(
                     "Terminating Velocity and Fabric server processes."
                 );
@@ -188,6 +198,10 @@ const command = {
             } else if (killing) {
                 await interaction.channel.send(
                     "The processes are already undergoing extermination. Thanks for trying to help though. :)"
+                );
+            } else if (starting) {
+                await interaction.channel.send(
+                    "Cannot terminate while process instantiation is still underway. Please calm the fuck down. :)"
                 );
             }
         }
