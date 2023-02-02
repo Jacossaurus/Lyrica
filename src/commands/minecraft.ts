@@ -1,11 +1,6 @@
 import { ChildProcessWithoutNullStreams, spawn } from "child_process";
-import {
-    ChatInputCommandInteraction,
-    SlashCommandBuilder,
-    TextChannel,
-} from "discord.js";
+import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
 import path from "path";
-import { Command } from "../types/Command";
 
 const targetGuildIds = [
     "937409042970710046",
@@ -61,8 +56,8 @@ const command = {
 
         if (signal === "START") {
             if (velocityProcess === undefined && fabricProcess === undefined) {
-                const velocityPath = "../../velocity";
-                const fabricPath = "../../minecraft";
+                const velocityPath = process.env.VELOCITY_PATH;
+                const fabricPath = process.env.FABRIC_PATH;
 
                 await interaction.channel.send("Starting Velocity process.");
 
@@ -95,11 +90,15 @@ const command = {
                 );
 
                 velocityProcess.stdout.on("data", (data) => {
-                    process.stdout.write(data.toString());
+                    console.log(
+                        `VELOCITY: ${process.stdout.write(data.toString())}`
+                    );
                 });
 
                 fabricProcess.stdout.on("data", (data) => {
-                    process.stdout.write(data.toString());
+                    console.log(
+                        `FABRIC: ${process.stdout.write(data.toString())}`
+                    );
                 });
             } else if (stopSignalTimeout !== undefined) {
                 clearTimeout(stopSignalTimeout);
@@ -132,6 +131,9 @@ const command = {
 export default command;
 
 process.on("exit", () => {
+    velocityProcess?.stdin.write("end");
+    fabricProcess?.stdin.write("stop");
+
     velocityProcess?.kill();
     fabricProcess?.kill();
 });
