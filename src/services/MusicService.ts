@@ -282,8 +282,11 @@ class Music {
         const doTheEnd = async () => {
             if (track === undefined) {
                 await randomSearch();
+
                 return await doTheEnd();
             }
+
+            image = undefined;
 
             track.album.images.forEach((i) => {
                 if (image === undefined || i.height > image.height) {
